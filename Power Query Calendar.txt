@@ -1,0 +1,34 @@
+// Power Query Calendar v0.1
+//Created By: Jon Lunn jonhenrylunn@gmail.com
+//www.jlsql.wordpress.com
+
+let
+	// Can set you start date range here
+	Source = List.Dates,
+	#"Invoked FunctionSource" = Source(#date(2015, 1, 1), Duration.Days(DateTime.Date(DateTime.FixedLocalNow()) - #date(2015,1,1)), #duration(1, 0, 0, 0)),
+	#"Table from List" = Table.FromList(#"Invoked FunctionSource", Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+	#"Added Index" = Table.AddIndexColumn(#"Table from List", "CalendarKey", 1, 1),
+	#"Renamed Columns" = Table.RenameColumns(#"Added Index",{{"Column1", "Date"}}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Renamed Columns",{"CalendarKey", "Date"}),
+	// All below items are dependant on the [Date] Column
+	// Remove the ones you don't need
+    // Day
+	#"Add Short Day Name" = Table.AddColumn(#"Reordered Columns", "DayShortName", each Date.ToText([Date],"ddd")),
+    #"Add Day Long Name" = Table.AddColumn(#"Add Short Day Name", "DayLongName", each Date.ToText([Date],"dddd")),
+    #"Add Day Of Week" = Table.AddColumn(#"Add Day Long Name", "DayOfWeek", each Date.DayOfWeek([Date])),
+    #"Add Is Week Day" = Table.AddColumn(#"Add Day Of Week", "IsWeekday", each if Date.DayOfWeek([Date]) >= 5 then 0 else 1),
+	// Month
+    #"Add Month Key" = Table.AddColumn(#"Add Is Week Day", "MonthKey", each Date.Month([Date])),
+    #"Add Month Short Name" = Table.AddColumn(#"Add Month Key", "MonthShortName", each Date.ToText([Date],"MMM")),
+	#"Add Month Long Name" = Table.AddColumn(#"Add Month Short Name", "MonthLongName", each Date.ToText([Date],"MMMM")),
+    #"Add Month Year Name" = Table.AddColumn(#"Add Month Long Name", "MonthYearName", each Date.ToText([Date], "MMM") & "-" & Date.ToText([Date], "yy")),
+    #"Add Month Year Key" = Table.AddColumn(#"Add Month Year Name", "MonthYearKey", each Number.FromText(Number.ToText(Date.Year([Date])) & Number.ToText(Date.Month([Date]), "00"))),
+	// Quarter
+	#"Add Quarter Of Year" = Table.AddColumn(#"Add Month Year Key", "QuarterOfYear", each Date.QuarterOfYear([Date])),
+    #"Add Quarter Name" = Table.AddColumn(#"Add Quarter Of Year", "QuarterName", each "Q" & Number.ToText(Date.QuarterOfYear([Date]), "00")),
+    #"Add Quarter Year Name" = Table.AddColumn(#"Add Quarter Name", "QuarterYearName", each "Q" & Number.ToText(Date.QuarterOfYear([Date]), "00") & "-" & Date.ToText([Date], "yy")),
+    #"Add Quarter Year Key" = Table.AddColumn(#"Add Quarter Year Name", "QuarterYearKey", each Number.FromText(Number.ToText(Date.Year([Date])) & Number.ToText(Date.QuarterOfYear([Date]), "00"))),
+	// Year
+    #"Add Year Column" = Table.AddColumn(#"Add Quarter Year Key", "Year", each Date.Year([Date]))
+in
+    #"Add Year Column"
