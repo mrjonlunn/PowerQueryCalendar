@@ -30,5 +30,6 @@ let
     #"Add Quarter Year Key" = Table.AddColumn(#"Add Quarter Year Name", "QuarterYearKey", each Number.FromText(Number.ToText(Date.Year([Date])) & Number.ToText(Date.QuarterOfYear([Date]), "00"))),
 	// Year
     #"Add Year Column" = Table.AddColumn(#"Add Quarter Year Key", "Year", each Date.Year([Date]))
+    #"Changed Type" = Table.TransformColumnTypes(#"Add Year Column",{{"Date", type date}})
 in
-    #"Add Year Column"
+    #"Changed Type"
