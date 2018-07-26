@@ -1,11 +1,11 @@
-// Power Query Calendar v0.1
+// Power Query Calendar v1.0
 //Created By: Jon Lunn jonhenrylunn@gmail.com
 //www.jlsql.wordpress.com
 
 let
 	// Can set you start date range here
 	Source = List.Dates,
-	#"Invoked FunctionSource" = Source(#date(2015, 1, 1), Duration.Days(DateTime.Date(DateTime.FixedLocalNow()) - #date(2015,1,1)), #duration(1, 0, 0, 0)),
+	#"Invoked FunctionSource" = Source(#date(2015, 1, 1), Duration.Days(#date(Date.Year(DateTime.FixedLocalNow()), 12, 31) - #date(2015,1,1)), #duration(1, 0, 0, 0)),
 	#"Table from List" = Table.FromList(#"Invoked FunctionSource", Splitter.SplitByNothing(), null, null, ExtraValues.Error),
 	#"Added Index" = Table.AddIndexColumn(#"Table from List", "CalendarKey", 1, 1),
 	#"Renamed Columns" = Table.RenameColumns(#"Added Index",{{"Column1", "Date"}}),
@@ -30,6 +30,19 @@ let
     #"Add Quarter Year Key" = Table.AddColumn(#"Add Quarter Year Name", "QuarterYearKey", each Number.FromText(Number.ToText(Date.Year([Date])) & Number.ToText(Date.QuarterOfYear([Date]), "00"))),
 	// Year
     #"Add Year Column" = Table.AddColumn(#"Add Quarter Year Key", "Year", each Date.Year([Date])),
-    #"Changed Type" = Table.TransformColumnTypes(#"Add Year Column",{{"Date", type date}})
+    #"Added Week Key" = Table.AddColumn(#"Add Year Column", "WeekKey", each Date.WeekOfYear([Date])),
+    #"Added Week Name" = Table.AddColumn(#"Added Week Key", "WeekName", each "WK" & Number.ToText(Date.WeekOfYear([Date]), "00")),
+    #"Added Week Year Key" = Table.AddColumn(#"Added Week Name", "Week Year Key", each Number.FromText(Number.ToText(Date.Year([Date])) & Number.ToText(Date.WeekOfYear([Date]), "00"))),
+    #"Added Week Year Name" = Table.AddColumn(#"Added Week Year Key", "Week Year Name", each "WK" & Number.ToText(Date.WeekOfYear([Date]), "00") & "-" &  Date.ToText([Date], "yy")),
+    #"Added Current Day" = Table.AddColumn(#"Added Week Year Name", "Current Day", each Date.IsInCurrentDay([Date])),
+    #"Added Days Ago" = Table.AddColumn(#"Added Current Day", "Days Ago", each Duration.Days([Date] - DateTime.Date(DateTime.FixedLocalNow()))),
+    #"Added Months Ago" = Table.AddColumn(#"Added Days Ago", "Months Ago", each ((Date.Year([Date])-Date.Year(DateTime.LocalNow()))*12) + Date.Month([Date]) - Date.Month(DateTime.LocalNow())),
+    #"Added Quarters Ago" = Table.AddColumn(#"Added Months Ago", "Quarters Ago", each Date.QuarterOfYear([Date]) - Date.QuarterOfYear(DateTime.LocalNow()) + ((Date.Year(DateTime.Date([Date]))-Date.Year(DateTime.LocalNow())) * 4)),
+    #"Added Years Ago" = Table.AddColumn(#"Added Quarters Ago", "Years Ago", each Date.Year(DateTime.Date([Date]))-Date.Year(DateTime.LocalNow())),
+    #"Added Current Week" = Table.AddColumn(#"Added Years Ago", "Current Week", each Date.IsInCurrentWeek([Date])),
+    #"Added Current Month" = Table.AddColumn(#"Added Current Week", "Current Month", each Date.IsInCurrentMonth([Date])),
+    #"Added Current Quarter" = Table.AddColumn(#"Added Current Month", "Current Quarter", each Date.IsInCurrentQuarter([Date])),
+    #"Added Current Year" = Table.AddColumn(#"Added Current Quarter", "Current Year", each Date.IsInCurrentYear([Date])),
+    #"Changed Type" = Table.TransformColumnTypes(#"Added Current Year",{{"Date", type date}})
 in
     #"Changed Type"
